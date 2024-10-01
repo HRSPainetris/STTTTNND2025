@@ -1,0 +1,6 @@
+# 1. Install Opencv
+pip install opencv-python
+pip install opencv-contrib-python
+
+# 2. Install image 
+pip install imutils

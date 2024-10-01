@@ -3,8 +3,10 @@
         "cang",
         "fourcc",
         "imutils",
+        "imwrite",
         "MJPG",
         "nhanh",
+        "Opencv",
         "XVID"
     ]
 }
