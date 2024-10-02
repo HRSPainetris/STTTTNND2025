@@ -9,6 +9,8 @@ from datetime import datetime
 
 # CHANGE THE NAME HERE
 video_folder='20241002_01_35'
+fps = 2
+frame_step = int(30/fps)
 
 # Get the parent directory
 parent_directory = os.path.dirname(os.getcwd())
@@ -55,10 +57,11 @@ while(left_cap.isOpened()):
         break
     # gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     
-    # Saves image of the current frame in jpg file
-    out_left_frames_name = os.path.join(out_left_frames_path, f'{left_currentFrame:05d}.png')
-    cv2.imwrite(out_left_frames_name, left_frame)
-    cv2.imshow('Left video', left_frame)
+    if left_currentFrame % frame_step == 0:
+        # Saves image of the current frame in jpg file
+        out_left_frames_name = os.path.join(out_left_frames_path, f'{left_currentFrame:05d}.png')
+        cv2.imwrite(out_left_frames_name, left_frame)
+        cv2.imshow('Left video', left_frame)    
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
@@ -100,10 +103,11 @@ while(right_cap.isOpened()):
         print("Failed to read frame from right video")
         break
     
-    # Saves image of the current frame in jpg file
-    out_right_frames_name = os.path.join(out_right_frames_path, f'{right_currentFrame:05d}.png')
-    cv2.imwrite(out_right_frames_name, right_frame)
-    cv2.imshow('Right video',right_frame)
+    if right_currentFrame % frame_step == 0:
+        # Saves image of the current frame in jpg file
+        out_right_frames_name = os.path.join(out_right_frames_path, f'{right_currentFrame:05d}.png')
+        cv2.imwrite(out_right_frames_name, right_frame)
+        cv2.imshow('Right video',right_frame)
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
