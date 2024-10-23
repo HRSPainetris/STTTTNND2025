@@ -2,7 +2,7 @@ void go_right()
 {
   // Set gia tri goc xoay cho 3 motors
   steeringValue = read_angle;
-  throttleValue = 70;
+  throttleValue = 50;
   gearValue = 2;
   // In gia tri vua set
   print_value();

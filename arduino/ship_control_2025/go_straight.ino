@@ -3,7 +3,7 @@ void go_straight()
   // Set gia tri goc xoay cho 3 motors
   steeringValue = 0;
   throttleValue = 70;
-  gearValue = 2;
+  gearValue = 3;
   // In gia tri vua set
   print_value();
   // Run 3 dong co theo goc vua set

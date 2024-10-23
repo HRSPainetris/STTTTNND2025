@@ -52,8 +52,14 @@ AccelStepper gearMotor(MOTOR_INTERFACE_TYPE, GEAR_STEP_PIN, GEAR_DIR_PIN);
 // 5. Nut nhan restart
 #define RESTART_PIN 3
 
-// 6. Cam bien anh sang
+// 6. Nut nhan disable
+#define DISABLE_PIN 18
+
+// 7. Cam bien anh sang
 const int LIGHT_SENSOR_PIN = A5;
+
+// 8. BUZZER
+const int BUZZER_PIN = 19;
 
 //////////////////////////////////////////
 // KHAI BAO BIEN
@@ -64,21 +70,25 @@ int read_angle = 0;
 const int STEERING_MAX_ANGLE = 90; // Goc banh lai toi da cua thuyen
 const int STEERING_STEPS_PER_REVOLUTION = 400; // So xung dieu khien khi dong co quay 1 vong (thay doi theo driver)
 // const float GEAR_RATIO = 1.68; // Ti le goc quay cua tau vs so vong vo lang
-const float GEAR_RATIO = 15; // Ti le goc quay cua tau vs so vong vo lang
+const float GEAR_RATIO = 35; // Ti le goc quay cua tau vs so vong quay cua motor
 int currentSteering = 0;
 int steeringValue = 0;
+int steeringSteps = 0;
 
 // 2. Throttle motor: Dong co keo can ga
 const int THROTTLE_STEPS_PER_REVOLUTION = 200; // So xung dieu khien khi dong co quay 1 vong (thay doi theo driver)
 const float MAX_THROTTLE_ROTATION_DEGREES = 90.0; 
 int currentThrottle = 0;
 int throttleValue = 0;
+int maxThrottleSteps = 0;
+int throttleSteps = 0;
 
 // 3. Gear motor: Dong co keo can so
 const int GEAR_POSITIONS = 3; // So luong cap so (1:LUI, 2:KHONG SO; 3: TIEN)
 const int GEAR_STEP = 40;     
 int currentGear = 1;
 int gearValue = 1;
+int gearSteps = 0;
 
 // 4. Nut nhan e-stop
 int sta_estop = 0;
@@ -87,7 +97,10 @@ int sta_estop = 0;
 int sta_restart = 0;
 int wait_jetson1 = 0;
 
-// 6. Cam bien anh sang
+// 6. Nut nhan disable
+int sta_disable = 0;
+
+// 7. Cam bien anh sang
 int light_value = 0; // Gia tri analog cua cam bien anh sang
 int light_threshold = 400; // Gia tri nguong quy dinh ngay hoac dem
 int sta_light = 1; // Luu gia tri dieu kien anh sang (0: Night; 1: Day)
@@ -99,16 +112,16 @@ void setup() {
   // 1. Steering motor: Dong co xoay vo lang
   steeringMotor.setMaxSpeed(1000);
   steeringMotor.setAcceleration(500);
+  steeringMotor.setCurrentPosition(0);
   steeringMotor.setEnablePin(STEERING_ENA_PIN);
   digitalWrite(STEERING_ENA_PIN, HIGH);
-  steeringMotor.setCurrentPosition(0);
 
   // 2. Throttle motor: Dong co keo can ga
   throttleMotor.setMaxSpeed(1000);
   throttleMotor.setAcceleration(500);
+  throttleMotor.setCurrentPosition(0);
   throttleMotor.setEnablePin(THROTTLE_ENA_PIN);
   digitalWrite(THROTTLE_ENA_PIN, HIGH);
-  throttleMotor.setCurrentPosition(0);
 
   // 3. Gear motor: Dong co keo can so
   gearMotor.setMaxSpeed(1000);
@@ -119,15 +132,23 @@ void setup() {
 
   // 4. Nut nhan e-stop
   pinMode(E_STOP_PIN, INPUT);
-  attachInterrupt(0, estop_action, RISING);
+  // attachInterrupt(0, estop_action, RISING);
 
   // 5. Nut nhan restart
-  pinMode(RESTART_PIN, INPUT_PULLUP);
-  attachInterrupt(1, restart_action, FALLING);
+  pinMode(RESTART_PIN, INPUT);
+  attachInterrupt(1, restart_action, RISING);
+
+  // 6. Nut nhan restart
+  pinMode(DISABLE_PIN, INPUT);
+  // attachInterrupt(digitalPinToInterrupt(DISABLE_PIN), disable_action, RISING);
+
+  // 8. BUZZER
+  pinMode(BUZZER_PIN, OUTPUT);
+  digitalWrite(BUZZER_PIN, LOW);
 }
 
 void loop() {
   // run_3_motors_random();
-  // check_code();
+  // check_code(); 
   _main();
 }

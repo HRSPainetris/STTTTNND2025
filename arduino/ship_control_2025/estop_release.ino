@@ -1,0 +1,7 @@
+void estop_release()
+{
+  digitalWrite(STEERING_ENA_PIN, LOW);
+  digitalWrite(THROTTLE_ENA_PIN, LOW);
+  digitalWrite(GEAR_ENA_PIN, LOW);
+  delay(9);
+}
