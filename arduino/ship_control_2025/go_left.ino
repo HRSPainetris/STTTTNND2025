@@ -6,7 +6,7 @@ void go_left()
   gearValue = 1;
   // In gia tri vua set
   print_value();
-  // Run 3 dong co theo goc vua set
   run_3_motors();
-  delay(1500);
+  lasttime = millis();
+  readytorun = 1; 
 }

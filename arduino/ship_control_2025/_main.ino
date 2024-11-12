@@ -30,7 +30,6 @@ void _main ()
       if (inputString.startsWith("straight"))
         {
           go_straight();
-          Serial.println("done");
         }
       else if (inputString.startsWith("left_"))
         {
@@ -38,13 +37,19 @@ void _main ()
           // -> read_angle = 50
           read_angle = inputString.substring(5, 7).toInt();  // Lấy 2 ký tự sau "left_" và chuyển đổi chuỗi sang số nguyên
           go_left();
-          Serial.println("done");
         }
       else if (inputString.startsWith("right_"))
         {
           read_angle = inputString.substring(6, 8).toInt();  // Lấy 2 ký tự sau "right_" và chuyển đổi chuỗi sang số nguyên
           go_right();
-          Serial.println("done");
+        }
+      // Cho jeston khoi tao lai chuong trinh va gui "new_record_created"
+      if (wait_jetson1 == 1 && inputString.startsWith("new_record_created"))
+        {
+            //*** Hoan tat chu trinh binh thuong
+          sta_restart = 0;
+          wait_jetson1 = 0;
+          Serial.println("completecyle");
         }
     }
 

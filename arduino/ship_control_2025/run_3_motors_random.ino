@@ -6,7 +6,7 @@ void run_3_motors_random()
     steeringValue = random(-STEERING_MAX_ANGLE, STEERING_MAX_ANGLE);
     throttleValue = random(1, 100);
     gearValue = random(1, GEAR_POSITIONS);
-    print_value();
+    // print_value();
     delay(2000);
   }
 }
