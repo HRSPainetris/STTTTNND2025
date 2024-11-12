@@ -1,10 +1,6 @@
 void run_3_motors()
 {
-  if (digitalRead(E_STOP_PIN) == 0)
-  {
-    // digitalWrite(BUZZER_PIN, LOW);
-    estop_release();
-  }
+
   // 1. Steering motor: Dong co xoay vo lang
   currentSteering = constrain(steeringValue, -STEERING_MAX_ANGLE, STEERING_MAX_ANGLE);
   digitalWrite(STEERING_ENA_PIN, LOW);
@@ -30,13 +26,4 @@ void run_3_motors()
   throttleMotor.moveTo(throttleSteps);
   gearMotor.moveTo(gearSteps);
 
-  // Chay 3 motors
-  steeringMotor.run();
-  throttleMotor.run();
-  gearMotor.run();
-
-  // All motors ve trang thai nghi khi hoan thanh
-  if (steeringMotor.distanceToGo() == 0) digitalWrite(STEERING_ENA_PIN, HIGH);
-  if (throttleMotor.distanceToGo() == 0) digitalWrite(THROTTLE_ENA_PIN, HIGH);
-  if (gearMotor.distanceToGo() == 0) digitalWrite(GEAR_ENA_PIN, HIGH);
 }
