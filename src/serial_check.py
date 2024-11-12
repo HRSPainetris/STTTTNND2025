@@ -6,7 +6,7 @@ import time
 ###################################################
 ## Ket noi voi arduino 
 try:                                                                                  
-    arduino_module = serial.Serial(port = 'COM3', baudrate = 9600, timeout = 0.05)                         
+    arduino_module = serial.Serial(port = 'COM6', baudrate = 115200, timeout = 0.5)                         
     arduino_module.flush()
     print("Arduino connected successfully!")                                            
 except:                                                                               
@@ -32,10 +32,11 @@ def read_message_from_arduino(arduino_module):
     # new_record
     message = arduino_module.readline() # doc tin hieu ve
     message = message.decode("utf-8").rstrip('\r\n') 
-    print("Data from Arduino: ", message)
+    # print("Data from Arduino: ", message)
     return message
 
 if __name__ == "__main__":
+    flag = 0
     try:
         while True:
             # Read input from the keyboard
@@ -44,11 +45,14 @@ if __name__ == "__main__":
                 break
             # Send the message to the Arduino
             send_message_to_arduino(arduino_module, user_input)
+            flag = 1
             
-            if arduino_module.in_waiting > 0:
-                # Read the message from the Arduino
-                response = read_message_from_arduino(arduino_module)
-                print("Response from Arduino: ", response)
+            while flag ==1:
+                if arduino_module.in_waiting > 0:
+                    # Read the message from the Arduino
+                    response = read_message_from_arduino(arduino_module)
+                    print("Response from Arduino: ", response)
+                    flag = 0
     except KeyboardInterrupt:
         print("Exiting program")
 
