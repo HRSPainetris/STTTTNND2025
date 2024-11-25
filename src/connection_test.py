@@ -55,10 +55,18 @@ vehicle = connectMyCopter()
 
 vehicle.wait_ready('autopilot_version')
 print('Autopilot version: %s'%vehicle.version)
+
 while True:
 	# print("Groundspeed: %s" % vehicle.groundspeed)
 	# print ("Attitude: %s" % vehicle.attitude)
 	# print("Velocity: %s" % vehicle.velocity)
-	print("Groundspeed: {}. Velocity: {}.".format(vehicle.groundspeed,vehicle.velocity))
+	lat = vehicle.location.global_frame.lat
+	lon = vehicle.location.global_frame.lon
+	# Lat: 10.2458718 , Lon: 106.367329.
+	# print(lat,lon)
+	print("{},{}".format(lat,lon))
+	# print("Lat: {} , Lon: {}.".format(lat,lon))
+	# print("GPS: %s" % vehicle.location.global_frame)
+	# print("Groundspeed: {}. Velocity: {}.".format(vehicle.groundspeed,vehicle.velocity))
 
 # arm()

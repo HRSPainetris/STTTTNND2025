@@ -42,8 +42,8 @@ class VideoCapture:
 
 
 def main():
-    vs1 = VideoCapture("rtsp://khkt2024left:khkt2024@ndc!@192.168.0.103:554/stream1")
-    vs2 = VideoCapture("rtsp://khkt2024right:khkt2024@ndc!@192.168.0.101:554/stream1")
+    vs1 = VideoCapture("rtsp://khkt2024left:khkt2024@ndc!@192.168.0.101:554/stream1")
+    vs2 = VideoCapture("rtsp://khkt2024right:khkt2024@ndc!@192.168.0.100:554/stream1")
     start_time2 = time.time()
     frame_rate = 30
     fps = 0
