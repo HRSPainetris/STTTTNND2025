@@ -48,7 +48,7 @@ import socket
 # DROWSINESS DETECTION
 select_para = 0
 EYE_AR_THRESH = 0.15 # Nguong EAR
-EYE_AR_CONSEC_FRAMES = 30 # So frame lien tuc de xac dinh buon ngu
+EYE_AR_CONSEC_FRAMES = 20 # So frame lien tuc de xac dinh buon ngu
 # Set_time - Dat truoc thoi gian canh bao tai cong lai lien tuc
 SET_HR = 0      # GIO
 SET_MIN = 1     # PHUT
@@ -121,7 +121,7 @@ flag_bridge_in_right = 0
 
 # SIGN: cls_id = 2
 SIGN_COUNTER = 0
-SIGN_CONSEC_THRES = 5
+SIGN_CONSEC_THRES = 10
 flag_sign_warning = 0
 flag_sign_in_left = 0
 flag_sign_in_right = 0
@@ -753,6 +753,7 @@ def object_detection():
             break
         
 def cal_distance(cls_id, y1, y2, obj_det_frame_height):
+    dist = 0 
     # Calculate the distance of the object
     obj_h_ratio = (y2 - y1)/obj_det_frame_height
     if cls_id == 0: # Ship
@@ -867,8 +868,8 @@ def object_warning(cls_id, x1, y1, x2, y2, curr_det_data, prev_det_data, i, prev
                 if flag_ship_in_left == 1 and flag_ship_in_right == 0:
                     # print("Phat hien tau BEN TRAI!")
                     flag_ship_warning = 1
-                    if estop_status == 0:
-                        send_left_to_arduino(arduino_module, cal_steering_angle(dist, ship_speed))
+                    # if estop_status == 0:
+                    #     send_left_to_arduino(arduino_module, cal_steering_angle(dist, ship_speed))
                     t5 = Thread(phat_loa_show_info_ob_det("5_cham_trai"))
                     t5.deamon = True
                     t5.start()
@@ -876,8 +877,8 @@ def object_warning(cls_id, x1, y1, x2, y2, curr_det_data, prev_det_data, i, prev
                 elif flag_ship_in_left == 0 and flag_ship_in_right == 1:
                     # print("Phat hien tau BEN PHAI!")
                     flag_ship_warning = 1
-                    if estop_status == 0:
-                        send_right_to_arduino(arduino_module, cal_steering_angle(dist, ship_speed))
+                    # if estop_status == 0:
+                    #     send_right_to_arduino(arduino_module, cal_steering_angle(dist, ship_speed))
                     t5 = Thread(phat_loa_show_info_ob_det("4_cham_phai"))
                     t5.deamon = True
                     t5.start()
@@ -885,8 +886,8 @@ def object_warning(cls_id, x1, y1, x2, y2, curr_det_data, prev_det_data, i, prev
                 elif flag_ship_in_left == 1 and flag_ship_in_right == 1:
                     # print("Phat hien tau HAI BEN!")
                     flag_ship_warning = 1
-                    if estop_status == 0:
-                        send_straight_to_arduino(arduino_module)
+                    # if estop_status == 0:
+                    #     send_straight_to_arduino(arduino_module)
                     t5 = Thread(phat_loa_show_info_ob_det("3_cham_2ben"))
                     t5.deamon = True
                     t5.start()  
@@ -1098,7 +1099,8 @@ def detect_2_ip_cameras():
     # print("Stacked frame dimensions: ", stacked_frame.shape)
     # cv2.imshow("LEFT and RIGHT Camera", stacked_frame)
     
-    obj_det_results = daytime_detector.predict(stacked_frame, conf=0.05, save=False, verbose=False)
+    # obj_det_results = daytime_detector.predict(stacked_frame, conf=0.05, save=False, verbose=False)
+    obj_det_results = nighttime_detector.predict(stacked_frame, conf=0.05, save=False, verbose=False)
     
     curr_det_data = []
     
@@ -1146,17 +1148,17 @@ def detect_2_ip_cameras():
 ###################################################
 ## Ket noi voi arduino 
 ## /dev/ttyACM0
-try:                       
-    ## Jetson Nano
-    arduino_module = serial.Serial(port = '/dev/ttyACM0', baudrate = 115200, timeout = 0.5)                           
-    arduino_module.flush()
-    print("Arduino connected successfully!")                                            
-except:                                                                               
-    print("Please check the Arduino port again") 
+# try:                       
+#     ## Jetson Nano
+#     arduino_module = serial.Serial(port = '/dev/ttyACM0', baudrate = 115200, timeout = 0.5)                           
+#     arduino_module.flush()
+#     print("Arduino connected successfully!")                                            
+# except:                                                                               
+#     print("Please check the Arduino port again") 
     
 try:
     ## Windows                                                                                  
-    arduino_module = serial.Serial(port = 'COM8', baudrate = 115200, timeout = 0.5)                                                  
+    arduino_module = serial.Serial(port = 'COM6', baudrate = 115200, timeout = 0.5)                                                  
     arduino_module.flush()
     print("Arduino connected successfully!")                                            
 except:                                                                               
@@ -1248,10 +1250,10 @@ def update_from_arduino():
 # IP CAMERAS
 try:
     print("[INFO] starting LEFT camera ...")
-    left_cam = VideoCapture("rtsp://khkt2024left:khkt2024@ndc!@192.168.0.104:554/stream1")
+    left_cam = VideoCapture("rtsp://khkt2024left:khkt2024@ndc!@192.168.0.100:554/stream1")
     print("LEFT camera connect Successfully!")
     print("[INFO] starting RIGHT camera ...")
-    right_cam = VideoCapture("rtsp://khkt2024right:khkt2024@ndc!@192.168.0.100:554/stream1")
+    right_cam = VideoCapture("rtsp://khkt2024right:khkt2024@ndc!@192.168.0.107:554/stream1")
     time.sleep(1.0)
     print("RIGHT camera connect Successfully!")
 except:
@@ -1355,10 +1357,11 @@ if __name__ == "__main__":
     # start_time = nhan_mat_set_time(FACE_COUNTER_THRES)
     start_time = datetime.now()
     check_get_keyboard_input_1()
-    T1 = Thread(target=drowsiness_detection, daemon=True).start()
-    # T3 = Thread(target = detect_2_ip_videos, daemon=True).start()
+    # T1 = Thread(target=drowsiness_detection, daemon=True).start()
+    # T3 = Thread(target = detect_2_ip_cameras, daemon=True).start()
     while True:
         detect_2_ip_cameras()
+        # drowsiness_detection()
         # update_from_arduino()
         # send_gps_data_to_arduino()
         if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -1366,7 +1369,7 @@ if __name__ == "__main__":
             break
     # When everything is done, release the capture
     print("[INFO] cleaning up...")
-    T1.join()
+    # T1.join()
     # T3.join()
     left_cam.cap.release()
     left_org_vid.release()
@@ -1377,7 +1380,7 @@ if __name__ == "__main__":
     driver_cam.cap.release()
     driver_out_vid.release()
     cv2.destroyAllWindows()
-    arduino_module.close()
+    # arduino_module.close()
 
     
     
