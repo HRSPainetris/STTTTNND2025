@@ -48,7 +48,7 @@ import socket
 # DROWSINESS DETECTION
 select_para = 0
 EYE_AR_THRESH = 0.15 # Nguong EAR
-EYE_AR_CONSEC_FRAMES = 20 # So frame lien tuc de xac dinh buon ngu
+EYE_AR_CONSEC_FRAMES = 30 # So frame lien tuc de xac dinh buon ngu
 # Set_time - Dat truoc thoi gian canh bao tai cong lai lien tuc
 SET_HR = 0      # GIO
 SET_MIN = 1     # PHUT
@@ -102,7 +102,7 @@ pseudo_process_time = 1
 prev_speed = 1
 
 # SHIP: cls_id = 0
-SHIP_DISTANCE_WARN_THRES = 30 # meters
+SHIP_DISTANCE_WARN_THRES = 80 # meters
 SHIP_SPEED_WARN_THRES = 40 # km/h
 SHIP_COUNTER = 0
 SHIP_CONSEC_THRES = 5
@@ -121,7 +121,7 @@ flag_bridge_in_right = 0
 
 # SIGN: cls_id = 2
 SIGN_COUNTER = 0
-SIGN_CONSEC_THRES = 10
+SIGN_CONSEC_THRES = 5
 flag_sign_warning = 0
 flag_sign_in_left = 0
 flag_sign_in_right = 0
@@ -415,14 +415,15 @@ def list_cameras():
 ###################################################
 ##         TODO 11: INTERFACE WITH PX4           ##
 ###################################################
-# # Connect to the PX4 to get the GPS data
-# def connectMyCopter():
-# 	PX4_GPS = connect('/dev/ttyTHS1', baud=57600, wait_ready=False)
-# 	return PX4_GPS
+# Connect to the PX4 to get the GPS data
+def connectMyCopter():
+	# PX4_GPS = connect('/dev/ttyTHS1', baud=57600, wait_ready=False)
+    PX4_GPS = connect('COM15', baud=115200, wait_ready=False)
+    return PX4_GPS
 
-# PX4_GPS = connectMyCopter()
-# PX4_GPS.wait_ready('autopilot_version')
-# print('Autopilot version: %s'%PX4_GPS.version)
+PX4_GPS = connectMyCopter()
+PX4_GPS.wait_ready('autopilot_version')
+print('Autopilot version: %s'%PX4_GPS.version)
 
 ###################################################
 ##         TODO 12: INPUT FROM KEYBOARD          ##
@@ -753,7 +754,6 @@ def object_detection():
             break
         
 def cal_distance(cls_id, y1, y2, obj_det_frame_height):
-    dist = 0 
     # Calculate the distance of the object
     obj_h_ratio = (y2 - y1)/obj_det_frame_height
     if cls_id == 0: # Ship
@@ -770,7 +770,6 @@ def cal_speed(i, prev_det_data, curr_det_data, x1, y1, x2, y2, cls_id,
         dist_delta = 0
     else:
         curr_det_data.append([x1, y1, x2, y2, cls_id, dist])
-        i = 1
         
         if len(prev_det_data) > 0:
             iou_list = []
@@ -800,11 +799,16 @@ def cal_steering_angle(dist,speed):
     if speed == 0:
         return 0
     else:
-        angle = 0.5 * dist + 0.5 * speed
-        return angle
-    
+        angle = 0.2 * dist + 0.8 * speed
+        return round(angle)
+
+send_time = 0
+send_gps_time = 0
+
 def object_warning(cls_id, x1, y1, x2, y2, curr_det_data, prev_det_data, i, prev_speed, 
                    pseudo_process_time, obj_det_frame_height, stacked_frame):
+    global send_time
+    global send_gps_time
     ## SHIP: cls_id = 0
     global SHIP_COUNTER
     global flag_ship_warning
@@ -868,8 +872,13 @@ def object_warning(cls_id, x1, y1, x2, y2, curr_det_data, prev_det_data, i, prev
                 if flag_ship_in_left == 1 and flag_ship_in_right == 0:
                     # print("Phat hien tau BEN TRAI!")
                     flag_ship_warning = 1
-                    # if estop_status == 0:
-                    #     send_left_to_arduino(arduino_module, cal_steering_angle(dist, ship_speed))
+                    if estop_status == 0:
+                        if (time.time() - send_time) > 5:                            
+                            send_left_to_arduino(arduino_module, cal_steering_angle(dist, ship_speed))
+                            send_time = time.time()
+                        if (time.time() - send_gps_time) > 7:
+                            send_gps_data_to_arduino()
+                            send_gps_time = time.time()
                     t5 = Thread(phat_loa_show_info_ob_det("5_cham_trai"))
                     t5.deamon = True
                     t5.start()
@@ -877,8 +886,13 @@ def object_warning(cls_id, x1, y1, x2, y2, curr_det_data, prev_det_data, i, prev
                 elif flag_ship_in_left == 0 and flag_ship_in_right == 1:
                     # print("Phat hien tau BEN PHAI!")
                     flag_ship_warning = 1
-                    # if estop_status == 0:
-                    #     send_right_to_arduino(arduino_module, cal_steering_angle(dist, ship_speed))
+                    if estop_status == 0:
+                        if (time.time() - send_time) > 5:   
+                            send_right_to_arduino(arduino_module, cal_steering_angle(dist, ship_speed))
+                            send_time = time.time()
+                        if (time.time() - send_gps_time) > 7:
+                            send_gps_data_to_arduino()
+                            send_gps_time = time.time()
                     t5 = Thread(phat_loa_show_info_ob_det("4_cham_phai"))
                     t5.deamon = True
                     t5.start()
@@ -886,8 +900,13 @@ def object_warning(cls_id, x1, y1, x2, y2, curr_det_data, prev_det_data, i, prev
                 elif flag_ship_in_left == 1 and flag_ship_in_right == 1:
                     # print("Phat hien tau HAI BEN!")
                     flag_ship_warning = 1
-                    # if estop_status == 0:
-                    #     send_straight_to_arduino(arduino_module)
+                    if estop_status == 0:
+                        if (time.time() - send_time) > 5: 
+                            send_straight_to_arduino(arduino_module)
+                            send_time = time.time()
+                        if (time.time() - send_gps_time) > 7:
+                            send_gps_data_to_arduino()
+                            send_gps_time = time.time()
                     t5 = Thread(phat_loa_show_info_ob_det("3_cham_2ben"))
                     t5.deamon = True
                     t5.start()  
@@ -895,8 +914,8 @@ def object_warning(cls_id, x1, y1, x2, y2, curr_det_data, prev_det_data, i, prev
         else:
             SHIP_COUNTER = 0
             flag_ship_warning = 0
-            # flag_ship_in_left = 0
-            # flag_ship_in_right = 0
+            flag_ship_in_left = 0
+            flag_ship_in_right = 0
             # Mark the ship with a cls_id color bounding box
             stacked_frame = cv2.rectangle(stacked_frame, (x1, y1), (x2, y2), colors[cls_id], 2)
             stacked_frame = cv2.putText(stacked_frame, f'D={int(dist)}m | {ship_speed}km/h', (x1, y1 - 15), 
@@ -1063,85 +1082,138 @@ def object_warning(cls_id, x1, y1, x2, y2, curr_det_data, prev_det_data, i, prev
 ###############################################################
 ## TODO 17*: 2 IP CAMERA VIDEOS (L+R) + 1 USB CAMERA (DRIVER) ##
 ###############################################################
-           
-#########################################################
-## TODO 18: 2 IP CAMERAS (L+R) + 1 USB CAMERA (DRIVER) ##
-#########################################################
+# Load LEFT and RIGHT videos
+left_in_vid_name = "20240825_103208.mp4" #ship
+# left_in_vid_name = "20240825_102907.mp4" # ship, bridge
+left_cam = cv2.VideoCapture(os.path.join(in_vid_path, "left_cam", left_in_vid_name))
+left_cam_nframes = int(left_cam.get(cv2.CAP_PROP_FRAME_COUNT))
+print("[INFO] Number of frames in the LEFT video: ", left_cam_nframes)
+
+right_in_vid_name = "20240825_101425.mp4"
+right_cam = cv2.VideoCapture(os.path.join(in_vid_path, "right_cam", right_in_vid_name))
+right_cam_nframes = int(right_cam.get(cv2.CAP_PROP_FRAME_COUNT))
+print("[INFO] Number of frames in the RIGHT video: ", right_cam_nframes)
+# Create a buffer to store the frames
+left_cam_buffer = []
+right_cam_buffer = []
 obj_det_frame_height = 320
-i = 0
 create_vid_writer()
-def detect_2_ip_cameras():
+
+# Load the frames into the buffer for loop processing
+for i in tqdm(range(min(left_cam_nframes, right_cam_nframes))):
+    left_cam_buffer.append(cv2.resize(left_cam.read()[1],(640,320)))
+    right_cam_buffer.append(cv2.resize(right_cam.read()[1],(640,320)))
+
+def detect_2_ip_videos():
     global prev_det_data
     global pseudo_process_time
     global prev_speed
     global left_org_vid, right_org_vid
-    global left_out_vid, right_out_vid   
+    global left_out_vid, right_out_vid
+    for i in range(min(left_cam_nframes, right_cam_nframes)):            
+        ob_det_start_time = time.time()
+        
+        left_frame = left_cam_buffer[i]
+        left_org_vid.write(cv2.resize(left_frame, (320, 240)))
                    
+        right_frame = right_cam_buffer[i]
+        right_org_vid.write(cv2.resize(right_frame, (320, 240)))
+        
+        stacked_frame = np.vstack((left_frame, right_frame))
+        # print("Stacked frame dimensions: ", stacked_frame.shape)
+        # cv2.imshow("LEFT and RIGHT Camera", stacked_frame)
+        
+        obj_det_results = daytime_detector.predict(stacked_frame, conf=0.05, save=False, verbose=False)
+        
+        curr_det_data = []
+        
+        # Process results list
+        boxes = obj_det_results[0].boxes  # Boxes object for bounding box outputs
+        
+        for box in boxes:
+            # Object Detection Info
+            cls_id = int(box.cls.cpu().detach().numpy()[0])
+            # print(f'Object: {cls_names[cls_id]}')
+            x1, y1, x2, y2 = box.xyxy[0].cpu().detach().numpy().astype('int')            
+            # (left, top, right, bottom)
+                   
+            ship_speed, stacked_frame = object_warning(cls_id, x1, y1, x2, y2, curr_det_data, prev_det_data, i, prev_speed, 
+                           pseudo_process_time, obj_det_frame_height, stacked_frame)
+                     
+            prev_det_data = curr_det_data.copy()
+            prev_speed = ship_speed
+
+            proctime = time.time() - ob_det_start_time
+            ob_det_fps = 1 / proctime
+
+            pseudo_process_time = max(proctime, 0.033)
+
+            # print(f'Time: {proctime} | FPS: {ob_det_fps}')
+            
+            stacked_frame = cv2.putText(stacked_frame, f"FPS: {ob_det_fps:.2f}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2, cv2.LINE_AA)
+
+            left_frame_new = stacked_frame[:obj_det_frame_height]
+            right_frame_new = stacked_frame[obj_det_frame_height:]
+            visualize_left(left_frame_new)
+            visualize_right(right_frame_new)          
+            left_out_vid.write(cv2.resize(left_frame_new, (320, 240)))
+            right_out_vid.write(cv2.resize(right_frame_new, (320, 240)))               
+        
+        # Calculate the delay to maintain 30 FPS
+        loop_time = time.time() - ob_det_start_time
+        delay = max(1, int((1 / 30 - loop_time) * 1000))
+        if cv2.waitKey(delay) & 0xFF == ord('q'):
+            stop_event.set()
+            break
+            
+#########################################################
+## TODO 18: 2 IP CAMERAS (L+R) + 1 USB CAMERA (DRIVER) ##
+#########################################################
+# Function: Collect data
+def collect_data_2_ip_cam():
+    global fps
+
     # LEFT Camera
     left_frame_org, success = left_cam.read()
     # Resize anh cang nho xu ly cang nhanh
-    left_frame_resize = cv2.resize(left_frame_org, (640,320), interpolation=cv2.INTER_LINEAR)
+    left_frame_resize = cv2.resize(left_frame_org, (w_save_size, h_save_size), interpolation=cv2.INTER_LINEAR)
     left_frame = left_frame_resize
     
     # RIGHT Camera
     right_frame_org, success = right_cam.read()
-    right_frame_resize = cv2.resize(right_frame_org, (640,320), interpolation=cv2.INTER_LINEAR)        
+    right_frame_resize = cv2.resize(right_frame_org, (w_save_size, h_save_size), interpolation=cv2.INTER_LINEAR)        
     right_frame = right_frame_resize
     
-    ob_det_start_time = time.time()
+    start_time = time.time()
     if not success:
         return
     
-    left_org_vid.write(cv2.resize(left_frame, (320, 240)))                
-    right_org_vid.write(cv2.resize(right_frame, (320, 240)))
-    
-    stacked_frame = np.vstack((left_frame, right_frame))
-    # print("Stacked frame dimensions: ", stacked_frame.shape)
-    # cv2.imshow("LEFT and RIGHT Camera", stacked_frame)
-    
-    # obj_det_results = daytime_detector.predict(stacked_frame, conf=0.05, save=False, verbose=False)
-    obj_det_results = nighttime_detector.predict(stacked_frame, conf=0.05, save=False, verbose=False)
-    
-    curr_det_data = []
-    
-    # Process results list
-    boxes = obj_det_results[0].boxes  # Boxes object for bounding box outputs
-    
-    for box in boxes:
-        # Object Detection Info
-        cls_id = int(box.cls.cpu().detach().numpy()[0])
-        # print(f'Object: {cls_names[cls_id]}')
-        x1, y1, x2, y2 = box.xyxy[0].cpu().detach().numpy().astype('int')            
-        # (left, top, right, bottom)
-                
-        ship_speed, stacked_frame = object_warning(cls_id, x1, y1, x2, y2, curr_det_data, prev_det_data, i, prev_speed, 
-                        pseudo_process_time, obj_det_frame_height, stacked_frame)
-                    
-        prev_det_data = curr_det_data.copy()
-        prev_speed = ship_speed
+    loop_time = time.time() - start_time
+    delay = max(1, int((1 / frame_rate - loop_time) * 1000))
 
-        proctime = time.time() - ob_det_start_time
-        ob_det_fps = 1 / proctime
-
-        pseudo_process_time = max(proctime, 0.033)
-
-        # print(f'Time: {proctime} | FPS: {ob_det_fps}')
-        
-        stacked_frame = cv2.putText(stacked_frame, f"FPS: {ob_det_fps:.2f}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2, cv2.LINE_AA)
-
-        left_frame_new = stacked_frame[:obj_det_frame_height]
-        right_frame_new = stacked_frame[obj_det_frame_height:]
-        visualize_left(left_frame_new)
-        visualize_right(right_frame_new)          
-        left_out_vid.write(cv2.resize(left_frame_new, (320, 240)))
-        right_out_vid.write(cv2.resize(right_frame_new, (320, 240)))               
-    
-    # Calculate the delay to maintain 30 FPS
-    loop_time = time.time() - ob_det_start_time
-    delay = max(1, int((1 / 30 - loop_time) * 1000))
     if cv2.waitKey(delay) & 0xFF == ord('q'):
-        stop_event.set()
-        return 
+        return
+
+    loop_time2 = time.time() - start_time
+    if loop_time2 > 0:
+        fps = 0.9 * fps + 0.1 / loop_time2
+        print("FPS:", fps)
+        
+    ###############################
+    #      Display the image      #
+    ###############################
+        
+    cv2.putText(left_frame_resize, f"LEFT Camera FPS: {fps:.2f}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2, cv2.LINE_AA)
+    cv2.putText(right_frame_resize, f"RIGHT Camera FPS: {fps:.2f}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2, cv2.LINE_AA)
+    show_img = np.concatenate((left_frame_resize, right_frame_resize), axis=1)
+    cv2.imshow('LEFT and RIGHT Camera', show_img)
+
+    # total_time = time.time() - begin_time
+    # print("Total time taken:", total_time, "seconds")
+      
+    # Save the videos
+    left_out_vid.write(left_frame)
+    right_out_vid.write(right_frame)  
 
 ###################################################
 ##        TODO 20: INTERACT WITH ARDUINO         ##
@@ -1158,7 +1230,7 @@ def detect_2_ip_cameras():
     
 try:
     ## Windows                                                                                  
-    arduino_module = serial.Serial(port = 'COM6', baudrate = 115200, timeout = 0.5)                                                  
+    arduino_module = serial.Serial(port = 'COM6', baudrate = 9600, timeout = 0.5)                                                  
     arduino_module.flush()
     print("Arduino connected successfully!")                                            
 except:                                                                               
@@ -1174,7 +1246,7 @@ def send_message_to_arduino(arduino_module, message):
     # right_50
     print("Send to Arduino: ", message)
     arduino_module.write(message.encode())
-    time.sleep(0.05)
+    time.sleep(0.1)
 
 def send_left_to_arduino(arduino_module, angle):
     message = "left_" + str(angle)
@@ -1210,6 +1282,7 @@ def update_from_arduino():
     global estop_status
     global enable_status
     global new_record_status
+    # global done_status
     # while not stop_event.is_set():
     if arduino_module.in_waiting > 0:
         # Read the message from the Arduino
@@ -1236,36 +1309,39 @@ def update_from_arduino():
 ###################################################    
 ##              Update from Arduino              ##
 ###################################################
-# def send_gps_data_to_arduino():
-#     lat = PX4_GPS.location.global_frame.lat
-#     lon = PX4_GPS.location.global_frame.lon 
-#     gps_data = f"{lat:.6f},{lon:.6f}"
-#     # gps_data = "gps_" + f"{lat:.6f},{lon:.6f}"
-#     send_message_to_arduino(arduino_module, gps_data)  
+def send_gps_data_to_arduino():
+    lat = PX4_GPS.location.global_frame.lat
+    lon = PX4_GPS.location.global_frame.lon 
+    gps_data = f"{lat:.7f}, {lon:.7f}"
+    # gps_data = "gps_" + f"{lat:.6f},{lon:.6f}"
+    send_message_to_arduino(arduino_module, gps_data)  
 
 ###################################################
 ##          TODO 21: INTERFACE WITH CAMERA       ##
 ###################################################
-
+'''
 # IP CAMERAS
 try:
     print("[INFO] starting LEFT camera ...")
     left_cam = VideoCapture("rtsp://khkt2024left:khkt2024@ndc!@192.168.0.100:554/stream1")
     print("LEFT camera connect Successfully!")
     print("[INFO] starting RIGHT camera ...")
-    right_cam = VideoCapture("rtsp://khkt2024right:khkt2024@ndc!@192.168.0.107:554/stream1")
+    right_cam = VideoCapture("rtsp://khkt2024right:khkt2024@ndc!@192.168.0.103:554/stream1")
     time.sleep(1.0)
     print("RIGHT camera connect Successfully!")
 except:
     print("Connect not successfully!!!")
     pass
+'''
 
 # List all USB cameras
 # cameras = list_cameras()
 # print("Connected cameras:", cameras)
 
+# left_src_cam = 0
+# right_src_cam = 2
 driver_src_cam = 1
-try:  
+try:   
     print("[INFO] starting DRIVER camera ...")
     driver_cam = VideoStream(src=driver_src_cam).start()
     time.sleep(1.0)
@@ -1292,6 +1368,9 @@ def test_thread():
 
 if __name__ == "__main__":    
     visualize_system_name()
+    begin_time = time.time()
+    frame_rate = 30
+    fps = 0
     stop_event = threading.Event()
     
     # DROWSINESS DETECTION
@@ -1347,7 +1426,7 @@ if __name__ == "__main__":
     cv2.destroyAllWindows()
     '''
     
-if __name__ == "__main__": 
+if __name__ == "__main__":    
     visualize_system_name()
     stop_event = threading.Event()
     
@@ -1355,15 +1434,16 @@ if __name__ == "__main__":
     set_time = cal_set_time(SET_HR, SET_MIN, SET_SEC)
     print("Set time: ", set_time)
     # start_time = nhan_mat_set_time(FACE_COUNTER_THRES)
-    start_time = datetime.now()
-    check_get_keyboard_input_1()
+    start_time = time.time()
+    # check_get_keyboard_input_1()
     # T1 = Thread(target=drowsiness_detection, daemon=True).start()
-    # T3 = Thread(target = detect_2_ip_cameras, daemon=True).start()
+    # T3 = Thread(target = detect_2_ip_videos, daemon=True).start()
+    # T4 = Thread(target = send_gps_data_to_arduino, daemon=True).start()
     while True:
-        detect_2_ip_cameras()
-        # drowsiness_detection()
+        detect_2_ip_videos()
         # update_from_arduino()
         # send_gps_data_to_arduino()
+        # time.sleep(2)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             stop_event.set() # Set the stop event
             break
@@ -1371,16 +1451,17 @@ if __name__ == "__main__":
     print("[INFO] cleaning up...")
     # T1.join()
     # T3.join()
-    left_cam.cap.release()
+    # T4.join()
+    # left_cam.cap.release()
     left_org_vid.release()
     left_out_vid.release()
-    right_cam.cap.release()
+    # right_cam.cap.release()
     right_org_vid.release()
     right_out_vid.release()
     driver_cam.cap.release()
     driver_out_vid.release()
     cv2.destroyAllWindows()
-    # arduino_module.close()
+    arduino_module.close()
 
     
     

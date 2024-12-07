@@ -38,7 +38,7 @@ import math
 import serial
 
 # PX4 connection library
-from dronekit import connect, VehicleMode, LocationGlobalRelative, APIException
+from dronekit import connect, VehicleMode #, LocationGlobalRelative, APIException
 import socket
 
 
@@ -48,7 +48,7 @@ import socket
 # DROWSINESS DETECTION
 select_para = 0
 EYE_AR_THRESH = 0.15 # Nguong EAR
-EYE_AR_CONSEC_FRAMES = 20 # So frame lien tuc de xac dinh buon ngu
+EYE_AR_CONSEC_FRAMES = 30 # So frame lien tuc de xac dinh buon ngu
 # Set_time - Dat truoc thoi gian canh bao tai cong lai lien tuc
 SET_HR = 0      # GIO
 SET_MIN = 1     # PHUT
@@ -102,7 +102,7 @@ pseudo_process_time = 1
 prev_speed = 1
 
 # SHIP: cls_id = 0
-SHIP_DISTANCE_WARN_THRES = 30 # meters
+SHIP_DISTANCE_WARN_THRES = 80 # meters
 SHIP_SPEED_WARN_THRES = 40 # km/h
 SHIP_COUNTER = 0
 SHIP_CONSEC_THRES = 5
@@ -121,7 +121,7 @@ flag_bridge_in_right = 0
 
 # SIGN: cls_id = 2
 SIGN_COUNTER = 0
-SIGN_CONSEC_THRES = 10
+SIGN_CONSEC_THRES = 5
 flag_sign_warning = 0
 flag_sign_in_left = 0
 flag_sign_in_right = 0
@@ -415,14 +415,15 @@ def list_cameras():
 ###################################################
 ##         TODO 11: INTERFACE WITH PX4           ##
 ###################################################
-# # Connect to the PX4 to get the GPS data
-# def connectMyCopter():
-# 	PX4_GPS = connect('/dev/ttyTHS1', baud=57600, wait_ready=False)
-# 	return PX4_GPS
+# Connect to the PX4 to get the GPS data
+def connectMyCopter():
+	# PX4_GPS = connect('/dev/ttyTHS1', baud=57600, wait_ready=False)
+    PX4_GPS = connect('COM11', baud=115200, wait_ready=False)
+    return PX4_GPS
 
-# PX4_GPS = connectMyCopter()
-# PX4_GPS.wait_ready('autopilot_version')
-# print('Autopilot version: %s'%PX4_GPS.version)
+PX4_GPS = connectMyCopter()
+PX4_GPS.wait_ready('autopilot_version')
+print('Autopilot version: %s'%PX4_GPS.version)
 
 ###################################################
 ##         TODO 12: INPUT FROM KEYBOARD          ##
@@ -753,7 +754,6 @@ def object_detection():
             break
         
 def cal_distance(cls_id, y1, y2, obj_det_frame_height):
-    dist = 0 
     # Calculate the distance of the object
     obj_h_ratio = (y2 - y1)/obj_det_frame_height
     if cls_id == 0: # Ship
@@ -770,7 +770,6 @@ def cal_speed(i, prev_det_data, curr_det_data, x1, y1, x2, y2, cls_id,
         dist_delta = 0
     else:
         curr_det_data.append([x1, y1, x2, y2, cls_id, dist])
-        i = 1
         
         if len(prev_det_data) > 0:
             iou_list = []
@@ -800,11 +799,16 @@ def cal_steering_angle(dist,speed):
     if speed == 0:
         return 0
     else:
-        angle = 0.5 * dist + 0.5 * speed
-        return angle
-    
+        angle = 0.2 * dist + 0.8 * speed
+        return round(angle)
+
+send_time = 0
+send_gps_time = 0
+
 def object_warning(cls_id, x1, y1, x2, y2, curr_det_data, prev_det_data, i, prev_speed, 
                    pseudo_process_time, obj_det_frame_height, stacked_frame):
+    global send_time
+    global send_gps_time
     ## SHIP: cls_id = 0
     global SHIP_COUNTER
     global flag_ship_warning
@@ -868,8 +872,13 @@ def object_warning(cls_id, x1, y1, x2, y2, curr_det_data, prev_det_data, i, prev
                 if flag_ship_in_left == 1 and flag_ship_in_right == 0:
                     # print("Phat hien tau BEN TRAI!")
                     flag_ship_warning = 1
-                    # if estop_status == 0:
-                    #     send_left_to_arduino(arduino_module, cal_steering_angle(dist, ship_speed))
+                    if estop_status == 0:
+                        if (time.time() - send_time) > 5:                            
+                            send_left_to_arduino(arduino_module, cal_steering_angle(dist, ship_speed))
+                            send_time = time.time()
+                        if (time.time() - send_gps_time) > 8:
+                            send_gps_data_to_arduino()
+                            send_gps_time = time.time()
                     t5 = Thread(phat_loa_show_info_ob_det("5_cham_trai"))
                     t5.deamon = True
                     t5.start()
@@ -877,8 +886,13 @@ def object_warning(cls_id, x1, y1, x2, y2, curr_det_data, prev_det_data, i, prev
                 elif flag_ship_in_left == 0 and flag_ship_in_right == 1:
                     # print("Phat hien tau BEN PHAI!")
                     flag_ship_warning = 1
-                    # if estop_status == 0:
-                    #     send_right_to_arduino(arduino_module, cal_steering_angle(dist, ship_speed))
+                    if estop_status == 0:
+                        if (time.time() - send_time) > 5:   
+                            send_right_to_arduino(arduino_module, cal_steering_angle(dist, ship_speed))
+                            send_time = time.time()
+                        if (time.time() - send_gps_time) > 8:
+                            send_gps_data_to_arduino()
+                            send_gps_time = time.time()
                     t5 = Thread(phat_loa_show_info_ob_det("4_cham_phai"))
                     t5.deamon = True
                     t5.start()
@@ -886,8 +900,13 @@ def object_warning(cls_id, x1, y1, x2, y2, curr_det_data, prev_det_data, i, prev
                 elif flag_ship_in_left == 1 and flag_ship_in_right == 1:
                     # print("Phat hien tau HAI BEN!")
                     flag_ship_warning = 1
-                    # if estop_status == 0:
-                    #     send_straight_to_arduino(arduino_module)
+                    if estop_status == 0:
+                        if (time.time() - send_time) > 5: 
+                            send_straight_to_arduino(arduino_module)
+                            send_time = time.time()
+                        if (time.time() - send_gps_time) > 8:
+                            send_gps_data_to_arduino()
+                            send_gps_time = time.time()
                     t5 = Thread(phat_loa_show_info_ob_det("3_cham_2ben"))
                     t5.deamon = True
                     t5.start()  
@@ -895,8 +914,8 @@ def object_warning(cls_id, x1, y1, x2, y2, curr_det_data, prev_det_data, i, prev
         else:
             SHIP_COUNTER = 0
             flag_ship_warning = 0
-            # flag_ship_in_left = 0
-            # flag_ship_in_right = 0
+            flag_ship_in_left = 0
+            flag_ship_in_right = 0
             # Mark the ship with a cls_id color bounding box
             stacked_frame = cv2.rectangle(stacked_frame, (x1, y1), (x2, y2), colors[cls_id], 2)
             stacked_frame = cv2.putText(stacked_frame, f'D={int(dist)}m | {ship_speed}km/h', (x1, y1 - 15), 
@@ -1063,7 +1082,7 @@ def object_warning(cls_id, x1, y1, x2, y2, curr_det_data, prev_det_data, i, prev
 ###############################################################
 ## TODO 17*: 2 IP CAMERA VIDEOS (L+R) + 1 USB CAMERA (DRIVER) ##
 ###############################################################
-           
+            
 #########################################################
 ## TODO 18: 2 IP CAMERAS (L+R) + 1 USB CAMERA (DRIVER) ##
 #########################################################
@@ -1099,8 +1118,8 @@ def detect_2_ip_cameras():
     # print("Stacked frame dimensions: ", stacked_frame.shape)
     # cv2.imshow("LEFT and RIGHT Camera", stacked_frame)
     
-    # obj_det_results = daytime_detector.predict(stacked_frame, conf=0.05, save=False, verbose=False)
-    obj_det_results = nighttime_detector.predict(stacked_frame, conf=0.05, save=False, verbose=False)
+    obj_det_results = daytime_detector.predict(stacked_frame, conf=0.05, save=False, verbose=False)
+    # obj_det_results = nighttime_detector.predict(stacked_frame, conf=0.05, save=False, verbose=False)
     
     curr_det_data = []
     
@@ -1156,13 +1175,13 @@ def detect_2_ip_cameras():
 # except:                                                                               
 #     print("Please check the Arduino port again") 
     
-try:
-    ## Windows                                                                                  
-    arduino_module = serial.Serial(port = 'COM6', baudrate = 115200, timeout = 0.5)                                                  
-    arduino_module.flush()
-    print("Arduino connected successfully!")                                            
-except:                                                                               
-    print("Please check the Arduino port again") 
+# try:
+## Windows                                                                                  
+arduino_module = serial.Serial(port = 'COM6', baudrate = 9600, timeout = 0.5)                                                  
+arduino_module.flush()
+print("Arduino connected successfully!")                                            
+# except:                                                                               
+#     print("Please check the Arduino port again") 
 
 ###################################################    
 ##             Send message to Arduino           ##
@@ -1174,7 +1193,7 @@ def send_message_to_arduino(arduino_module, message):
     # right_50
     print("Send to Arduino: ", message)
     arduino_module.write(message.encode())
-    time.sleep(0.05)
+    time.sleep(0.1)
 
 def send_left_to_arduino(arduino_module, angle):
     message = "left_" + str(angle)
@@ -1210,6 +1229,7 @@ def update_from_arduino():
     global estop_status
     global enable_status
     global new_record_status
+    # global done_status
     # while not stop_event.is_set():
     if arduino_module.in_waiting > 0:
         # Read the message from the Arduino
@@ -1236,44 +1256,47 @@ def update_from_arduino():
 ###################################################    
 ##              Update from Arduino              ##
 ###################################################
-# def send_gps_data_to_arduino():
-#     lat = PX4_GPS.location.global_frame.lat
-#     lon = PX4_GPS.location.global_frame.lon 
-#     gps_data = f"{lat:.6f},{lon:.6f}"
-#     # gps_data = "gps_" + f"{lat:.6f},{lon:.6f}"
-#     send_message_to_arduino(arduino_module, gps_data)  
+def send_gps_data_to_arduino():
+    lat = PX4_GPS.location.global_frame.lat
+    lon = PX4_GPS.location.global_frame.lon 
+    gps_data = f"{lat:.7f}, {lon:.7f}"
+    # gps_data = "gps_" + f"{lat:.6f},{lon:.6f}"
+    send_message_to_arduino(arduino_module, gps_data)  
 
 ###################################################
 ##          TODO 21: INTERFACE WITH CAMERA       ##
 ###################################################
 
 # IP CAMERAS
-try:
-    print("[INFO] starting LEFT camera ...")
-    left_cam = VideoCapture("rtsp://khkt2024left:khkt2024@ndc!@192.168.0.100:554/stream1")
-    print("LEFT camera connect Successfully!")
-    print("[INFO] starting RIGHT camera ...")
-    right_cam = VideoCapture("rtsp://khkt2024right:khkt2024@ndc!@192.168.0.107:554/stream1")
-    time.sleep(1.0)
-    print("RIGHT camera connect Successfully!")
-except:
-    print("Connect not successfully!!!")
-    pass
+# try:
+print("[INFO] starting LEFT camera ...")
+left_cam = VideoCapture("rtsp://khkt2024left:khkt2024@ndc!@192.168.0.100:554/stream1")
+print("LEFT camera connect Successfully!")
+print("[INFO] starting RIGHT camera ...")
+right_cam = VideoCapture("rtsp://khkt2024right:khkt2024@ndc!@192.168.0.104:554/stream1")
+time.sleep(1.0)
+print("RIGHT camera connect Successfully!")
+# except:
+#     print("Connect not successfully!!!")
+#     pass
+
 
 # List all USB cameras
 # cameras = list_cameras()
 # print("Connected cameras:", cameras)
 
+# left_src_cam = 0
+# right_src_cam = 2
 driver_src_cam = 1
-try:  
-    print("[INFO] starting DRIVER camera ...")
-    driver_cam = VideoStream(src=driver_src_cam).start()
-    time.sleep(1.0)
-    print("DRIVER camera connect Successfully!")
-        
-except:
-    print("Connect not successfully!!!")
-    pass
+# try:   
+print("[INFO] starting DRIVER camera ...")
+driver_cam = VideoStream(src=driver_src_cam).start()
+time.sleep(1.0)
+print("DRIVER camera connect Successfully!")
+    
+# except:
+#     print("Connect not successfully!!!")
+#     pass
 
 ###################################################
 ##         TODO 22*: MAIN FUNCTION               ##
@@ -1292,6 +1315,9 @@ def test_thread():
 
 if __name__ == "__main__":    
     visualize_system_name()
+    begin_time = time.time()
+    frame_rate = 30
+    fps = 0
     stop_event = threading.Event()
     
     # DROWSINESS DETECTION
@@ -1347,23 +1373,25 @@ if __name__ == "__main__":
     cv2.destroyAllWindows()
     '''
     
-if __name__ == "__main__": 
+if __name__ == "__main__":    
     visualize_system_name()
+    send_straight_to_arduino(arduino_module)
     stop_event = threading.Event()
     
     # # DROWSINESS DETECTION
     set_time = cal_set_time(SET_HR, SET_MIN, SET_SEC)
     print("Set time: ", set_time)
     # start_time = nhan_mat_set_time(FACE_COUNTER_THRES)
-    start_time = datetime.now()
-    check_get_keyboard_input_1()
+    start_time = time.time()
+    # check_get_keyboard_input_1()
     # T1 = Thread(target=drowsiness_detection, daemon=True).start()
     # T3 = Thread(target = detect_2_ip_cameras, daemon=True).start()
+    # T4 = Thread(target = send_gps_data_to_arduino, daemon=True).start()
     while True:
         detect_2_ip_cameras()
-        # drowsiness_detection()
         # update_from_arduino()
         # send_gps_data_to_arduino()
+        # time.sleep(2)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             stop_event.set() # Set the stop event
             break
@@ -1371,6 +1399,7 @@ if __name__ == "__main__":
     print("[INFO] cleaning up...")
     # T1.join()
     # T3.join()
+    # T4.join()
     left_cam.cap.release()
     left_org_vid.release()
     left_out_vid.release()
@@ -1380,7 +1409,7 @@ if __name__ == "__main__":
     driver_cam.cap.release()
     driver_out_vid.release()
     cv2.destroyAllWindows()
-    # arduino_module.close()
+    arduino_module.close()
 
     
     
