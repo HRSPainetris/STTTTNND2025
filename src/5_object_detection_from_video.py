@@ -1422,18 +1422,18 @@ if __name__ == "__main__":
     # print("Set time: ", set_time)
     # start_time = nhan_mat_set_time(FACE_COUNTER_THRES)
     # check_get_keyboard_input_1()
-    # T1 = Thread(target=drowsiness_detection, daemon=True).start()
+    T1 = Thread(target=drowsiness_detection, daemon=True).start()
     # T3 = Thread(target = detect_2_ip_videos, daemon=True).start()
     while True:
         detect_2_ip_videos()
-        update_from_arduino()
-        send_gps_data_to_arduino()
+        # update_from_arduino()
+        # send_gps_data_to_arduino()
         if cv2.waitKey(1) & 0xFF == ord('q'):
             stop_event.set() # Set the stop event
             break
     # When everything is done, release the capture
     print("[INFO] cleaning up...")
-    # T1.join()
+    T1.join()
     # T3.join()
     # left_cam.cap.release()
     left_org_vid.release()

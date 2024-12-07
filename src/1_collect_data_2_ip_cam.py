@@ -125,10 +125,10 @@ def collect_data_2_ip_cam():
 # IP CAMERAS
 try:
     print("[INFO] starting LEFT camera ...")
-    left_cam = VideoCapture("rtsp://khkt2024left:khkt2024@ndc!@192.168.0.100:554/stream1")
+    left_cam = VideoCapture("rtsp://khkt2024left:khkt2024@ndc!@192.168.0.104:554/stream1")
     print("LEFT camera connect Successfully!")
     print("[INFO] starting RIGHT camera ...")
-    right_cam = VideoCapture("rtsp://khkt2024right:khkt2024@ndc!@192.168.0.103:554/stream1")
+    right_cam = VideoCapture("rtsp://khkt2024right:khkt2024@ndc!@192.168.0.100:554/stream1")
     time.sleep(1.0)
     print("RIGHT camera connect Successfully!")
 except:
