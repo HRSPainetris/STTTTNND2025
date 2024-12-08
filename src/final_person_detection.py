@@ -755,11 +755,14 @@ def object_detection():
         
 def cal_distance(cls_id, y1, y2, obj_det_frame_height):
     # Calculate the distance of the object
+    dist = 0
     obj_h_ratio = (y2 - y1)/obj_det_frame_height
     if cls_id == 0: # Ship
         dist = -350 * obj_h_ratio + 75
     elif cls_id == 1: # Bridge
         dist = -350 * obj_h_ratio + 150
+    elif cls_id == 3: # Bridge
+        dist = 350 * obj_h_ratio - 10
     return dist
 
 def cal_speed(i, prev_det_data, curr_det_data, x1, y1, x2, y2, cls_id, 
@@ -799,8 +802,8 @@ def cal_steering_angle(dist,speed):
     if speed == 0:
         return 0
     else:
-        angle = (0.2 * dist + 0.8 * speed ) * 2 / 3
-        angle = max(min(angle, 45), -45)
+        angle = (0.2 * dist + 0.8 * speed) * 2 / 3
+        angle = min(angle,45)
         return round(angle)
 
 send_time = 0
@@ -1044,7 +1047,7 @@ def object_warning(cls_id, x1, y1, x2, y2, curr_det_data, prev_det_data, i, prev
         stacked_frame = cv2.putText(stacked_frame, f'{cls_names[cls_id]}', (x1, y1 - 40), cv2.FONT_HERSHEY_SIMPLEX, 0.7, colors[cls_id], 2, cv2.LINE_AA)
         stacked_frame = cv2.putText(stacked_frame, f'D={int(dist)}m' , (x1, y1 - 15), cv2.FONT_HERSHEY_SIMPLEX, 0.7, colors[cls_id], 2, cv2.LINE_AA)
            
-        if PERSON_COUNTER >= PERSON_CONSEC_THRES and flag_person_warning == 0:
+        if PERSON_COUNTER >= PERSON_CONSEC_THRES: # and flag_person_warning == 0:
             # DETERMINE LEFT OR RIGHT OR BOTH
             if y1 < obj_det_frame_height and y2 < obj_det_frame_height:
                 flag_person_in_left = 1
@@ -1052,31 +1055,32 @@ def object_warning(cls_id, x1, y1, x2, y2, curr_det_data, prev_det_data, i, prev
             elif y1 >= obj_det_frame_height and y2 >= obj_det_frame_height:
                 flag_person_in_right = 1
             
-            if flag_person_in_left == 1 and flag_person_in_right == 0:
-                # print("Phat hien nguoi BEN TRAI!")
+            if flag_person_in_left == 1: # and flag_person_in_right == 1:
+                print("Phat hien nguoi HAI BEN!")
+                flag_person_warning = 1
+                t8 = Thread(phat_loa_show_info_ob_det("6_nguoi_2ben"))
+                t8.deamon = True
+                t8.start()
+                
+            elif flag_person_in_left == 1: # and flag_person_in_right == 0:
+                print("Phat hien nguoi BEN TRAI!")
                 flag_person_warning = 1
                 t8 = Thread(phat_loa_show_info_ob_det("8_nguoi_trai"))
                 t8.deamon = True
                 t8.start()
                 
-            elif flag_person_in_left == 0 and flag_person_in_right == 1:
-                # print("Phat hien nguoi BEN PHAI!")
+            elif flag_person_in_left == 0: # and flag_person_in_right == 1:
+                print("Phat hien nguoi BEN PHAI!")
                 flag_person_warning = 1
                 t8 = Thread(phat_loa_show_info_ob_det("7_nguoi_phai"))
                 t8.deamon = True
                 t8.start()
                 
-            elif flag_person_in_left == 1 and flag_person_in_right == 1:
-                # print("Phat hien nguoi HAI BEN!")
-                flag_person_warning = 1
-                t8 = Thread(phat_loa_show_info_ob_det("6_nguoi_2ben"))
-                t8.deamon = True
-                t8.start()
-        else:
-            PERSON_COUNTER = 0
-            flag_person_warning = 0
-            flag_person_in_left = 0
-            flag_person_in_right = 0
+    else:
+        PERSON_COUNTER = 0
+        flag_person_warning = 0
+        flag_person_in_left = 0
+        flag_person_in_right = 0
     if not mixer.music.get_busy() and cv2.getWindowProperty("System Notice", cv2.WND_PROP_VISIBLE) >= 1:
         cv2.destroyWindow("System Notice")       
                                     
@@ -1086,13 +1090,13 @@ def object_warning(cls_id, x1, y1, x2, y2, curr_det_data, prev_det_data, i, prev
 ## TODO 17*: 2 IP CAMERA VIDEOS (L+R) + 1 USB CAMERA (DRIVER) ##
 ###############################################################
 # Load LEFT and RIGHT videos
-left_in_vid_name = "20240825_103208.mp4" #ship
+left_in_vid_name = "left_1.mp4" #ship
 # left_in_vid_name = "20240825_102907.mp4" # ship, bridge
 left_cam = cv2.VideoCapture(os.path.join(in_vid_path, "left_cam", left_in_vid_name))
 left_cam_nframes = int(left_cam.get(cv2.CAP_PROP_FRAME_COUNT))
 print("[INFO] Number of frames in the LEFT video: ", left_cam_nframes)
 
-right_in_vid_name = "20240825_101425.mp4"
+right_in_vid_name = "right_1.mp4"
 right_cam = cv2.VideoCapture(os.path.join(in_vid_path, "right_cam", right_in_vid_name))
 right_cam_nframes = int(right_cam.get(cv2.CAP_PROP_FRAME_COUNT))
 print("[INFO] Number of frames in the RIGHT video: ", right_cam_nframes)
@@ -1126,7 +1130,7 @@ def detect_2_ip_videos():
         # print("Stacked frame dimensions: ", stacked_frame.shape)
         # cv2.imshow("LEFT and RIGHT Camera", stacked_frame)
         
-        obj_det_results = daytime_detector.predict(stacked_frame, conf=0.05, save=False, verbose=False)
+        obj_det_results = nighttime_detector.predict(stacked_frame, conf=0.05, save=False, verbose=False)
         
         curr_det_data = []
         
@@ -1139,10 +1143,11 @@ def detect_2_ip_videos():
             # print(f'Object: {cls_names[cls_id]}')
             x1, y1, x2, y2 = box.xyxy[0].cpu().detach().numpy().astype('int')            
             # (left, top, right, bottom)
-                   
+            # if cls_id == 3:      
             ship_speed, stacked_frame = object_warning(cls_id, x1, y1, x2, y2, curr_det_data, prev_det_data, i, prev_speed, 
-                           pseudo_process_time, obj_det_frame_height, stacked_frame)
-                     
+                        pseudo_process_time, obj_det_frame_height, stacked_frame)
+            # else:
+            #     ship_speed = 0      
             prev_det_data = curr_det_data.copy()
             prev_speed = ship_speed
 
