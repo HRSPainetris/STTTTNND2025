@@ -799,7 +799,8 @@ def cal_steering_angle(dist,speed):
     if speed == 0:
         return 0
     else:
-        angle = 0.2 * dist + 0.8 * speed
+        angle = (0.2 * dist + 0.8 * speed) * 2 / 3
+        angle = min(angle,45)
         return round(angle)
 
 send_time = 0
