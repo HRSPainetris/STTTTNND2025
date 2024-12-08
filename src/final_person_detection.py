@@ -47,8 +47,8 @@ import socket
 ###################################################
 # DROWSINESS DETECTION
 select_para = 0
-EYE_AR_THRESH = 0.22 # Nguong EAR
-EYE_AR_CONSEC_FRAMES = 20 # So frame lien tuc de xac dinh buon ngu
+EYE_AR_THRESH = 0.15 # Nguong EAR
+EYE_AR_CONSEC_FRAMES = 30 # So frame lien tuc de xac dinh buon ngu
 # Set_time - Dat truoc thoi gian canh bao tai cong lai lien tuc
 SET_HR = 0      # GIO
 SET_MIN = 1     # PHUT
@@ -799,8 +799,7 @@ def cal_steering_angle(dist,speed):
     if speed == 0:
         return 0
     else:
-        angle = (0.2 * dist + 0.8 * speed) * 2 / 3
-        angle = min(angle,45)
+        angle = 0.2 * dist + 0.8 * speed
         return round(angle)
 
 send_time = 0
@@ -1086,26 +1085,26 @@ def object_warning(cls_id, x1, y1, x2, y2, curr_det_data, prev_det_data, i, prev
 ## TODO 17*: 2 IP CAMERA VIDEOS (L+R) + 1 USB CAMERA (DRIVER) ##
 ###############################################################
 # Load LEFT and RIGHT videos
-# left_in_vid_name = "20240825_103208.mp4" #ship
-# # left_in_vid_name = "20240825_102907.mp4" # ship, bridge
-# left_cam = cv2.VideoCapture(os.path.join(in_vid_path, "left_cam", left_in_vid_name))
-# left_cam_nframes = int(left_cam.get(cv2.CAP_PROP_FRAME_COUNT))
-# print("[INFO] Number of frames in the LEFT video: ", left_cam_nframes)
+left_in_vid_name = "20240825_103208.mp4" #ship
+# left_in_vid_name = "20240825_102907.mp4" # ship, bridge
+left_cam = cv2.VideoCapture(os.path.join(in_vid_path, "left_cam", left_in_vid_name))
+left_cam_nframes = int(left_cam.get(cv2.CAP_PROP_FRAME_COUNT))
+print("[INFO] Number of frames in the LEFT video: ", left_cam_nframes)
 
-# right_in_vid_name = "20240825_101425.mp4"
-# right_cam = cv2.VideoCapture(os.path.join(in_vid_path, "right_cam", right_in_vid_name))
-# right_cam_nframes = int(right_cam.get(cv2.CAP_PROP_FRAME_COUNT))
-# print("[INFO] Number of frames in the RIGHT video: ", right_cam_nframes)
-# # Create a buffer to store the frames
-# left_cam_buffer = []
-# right_cam_buffer = []
-# obj_det_frame_height = 320
+right_in_vid_name = "20240825_101425.mp4"
+right_cam = cv2.VideoCapture(os.path.join(in_vid_path, "right_cam", right_in_vid_name))
+right_cam_nframes = int(right_cam.get(cv2.CAP_PROP_FRAME_COUNT))
+print("[INFO] Number of frames in the RIGHT video: ", right_cam_nframes)
+# Create a buffer to store the frames
+left_cam_buffer = []
+right_cam_buffer = []
+obj_det_frame_height = 320
 create_vid_writer()
 
 # Load the frames into the buffer for loop processing
-# for i in tqdm(range(min(left_cam_nframes, right_cam_nframes))):
-#     left_cam_buffer.append(cv2.resize(left_cam.read()[1],(640,320)))
-#     right_cam_buffer.append(cv2.resize(right_cam.read()[1],(640,320)))
+for i in tqdm(range(min(left_cam_nframes, right_cam_nframes))):
+    left_cam_buffer.append(cv2.resize(left_cam.read()[1],(640,320)))
+    right_cam_buffer.append(cv2.resize(right_cam.read()[1],(640,320)))
 
 def detect_2_ip_videos():
     global prev_det_data
@@ -1225,9 +1224,9 @@ def collect_data_2_ip_cam():
 ## /dev/ttyACM1
 # try:                       
 ## Jetson Nano
-# arduino_module = serial.Serial(port = '/dev/ttyACM1', baudrate = 9600, timeout = 0.5)                           
-# arduino_module.flush()
-# print("Arduino connected successfully!")                                            
+arduino_module = serial.Serial(port = '/dev/ttyACM1', baudrate = 9600, timeout = 0.5)                           
+arduino_module.flush()
+print("Arduino connected successfully!")                                            
 # except:                                                                               
 #     print("Please check the Arduino port again") 
     
@@ -1345,12 +1344,12 @@ except:
 
 # left_src_cam = 0
 # right_src_cam = 2
-driver_src_cam = 0
-# try:   
-print("[INFO] starting DRIVER camera ...")
-driver_cam = VideoStream(src=driver_src_cam).start()
-time.sleep(1.0)
-print("DRIVER camera connect Successfully!")
+# driver_src_cam = 0
+# # try:   
+# print("[INFO] starting DRIVER camera ...")
+# driver_cam = VideoStream(src=driver_src_cam).start()
+# time.sleep(1.0)
+# print("DRIVER camera connect Successfully!")
     
 # except:
 #     print("Connect not successfully!!!")
@@ -1433,26 +1432,25 @@ if __name__ == "__main__":
     
 if __name__ == "__main__":    
     visualize_system_name()
-    # send_straight_to_arduino(arduino_module)
+    send_straight_to_arduino(arduino_module)
     stop_event = threading.Event()
     
     # # DROWSINESS DETECTION
-    set_time = cal_set_time(SET_HR, SET_MIN, SET_SEC)
-    print("Set time: ", set_time)
-    start_time = nhan_mat_set_time(FACE_COUNTER_THRES)
-    # start_time = time.time()
+    # set_time = cal_set_time(SET_HR, SET_MIN, SET_SEC)
+    # print("Set time: ", set_time)
+    # start_time = nhan_mat_set_time(FACE_COUNTER_THRES)
+    start_time = time.time()
     # check_get_keyboard_input_1()
     # T1 = Thread(target=drowsiness_detection, daemon=True).start()
     # T3 = Thread(target = detect_2_ip_videos, daemon=True).start()
     # T4 = Thread(target = send_gps_data_to_arduino, daemon=True).start()
     while True:
-        drowsiness_detection()
-        # detect_2_ip_videos()
+        detect_2_ip_videos()
         # update_from_arduino()
         # send_gps_data_to_arduino()
         # time.sleep(2)
         if cv2.waitKey(1) & 0xFF == ord('q'):
-            stop_event.set()  # Set the stop event
+            stop_event.set() # Set the stop event
             break
     # When everything is done, release the capture
     print("[INFO] cleaning up...")
@@ -1460,15 +1458,15 @@ if __name__ == "__main__":
     # T3.join()
     # T4.join()
     # left_cam.cap.release()
-    # left_org_vid.release()
-    # left_out_vid.release()
-    # # right_cam.cap.release()
-    # right_org_vid.release()
-    # right_out_vid.release()
+    left_org_vid.release()
+    left_out_vid.release()
+    # right_cam.cap.release()
+    right_org_vid.release()
+    right_out_vid.release()
     # driver_cam.cap.release()
     driver_out_vid.release()
     cv2.destroyAllWindows()
-    # arduino_module.close()
+    arduino_module.close()
 
     
     
