@@ -1085,13 +1085,13 @@ def object_warning(cls_id, x1, y1, x2, y2, curr_det_data, prev_det_data, i, prev
 ## TODO 17*: 2 IP CAMERA VIDEOS (L+R) + 1 USB CAMERA (DRIVER) ##
 ###############################################################
 # Load LEFT and RIGHT videos
-left_in_vid_name = "20240825_103208.mp4" #ship
+left_in_vid_name = "ship_day_20240825_103208.mp4" #ship
 # left_in_vid_name = "20240825_102907.mp4" # ship, bridge
 left_cam = cv2.VideoCapture(os.path.join(in_vid_path, "left_cam", left_in_vid_name))
 left_cam_nframes = int(left_cam.get(cv2.CAP_PROP_FRAME_COUNT))
 print("[INFO] Number of frames in the LEFT video: ", left_cam_nframes)
 
-right_in_vid_name = "20240825_101425.mp4"
+right_in_vid_name = "ship_day_20240825_101425.mp4"
 right_cam = cv2.VideoCapture(os.path.join(in_vid_path, "right_cam", right_in_vid_name))
 right_cam_nframes = int(right_cam.get(cv2.CAP_PROP_FRAME_COUNT))
 print("[INFO] Number of frames in the RIGHT video: ", right_cam_nframes)
