@@ -416,14 +416,14 @@ def list_cameras():
 ##         TODO 11: INTERFACE WITH PX4           ##
 ###################################################
 # Connect to the PX4 to get the GPS data
-def connectMyCopter():
-	# PX4_GPS = connect('/dev/ttyTHS1', baud=57600, wait_ready=False)
-    PX4_GPS = connect('COM11', baud=115200, wait_ready=False)
-    return PX4_GPS
+# def connectMyCopter():
+# 	PX4_GPS = connect('/dev/ttyTHS1', baud=57600, wait_ready=False)
+#     # PX4_GPS = connect('COM11', baud=115200, wait_ready=False)
+#     return PX4_GPS
 
-PX4_GPS = connectMyCopter()
-PX4_GPS.wait_ready('autopilot_version')
-print('Autopilot version: %s'%PX4_GPS.version)
+# PX4_GPS = connectMyCopter()
+# PX4_GPS.wait_ready('autopilot_version')
+# print('Autopilot version: %s'%PX4_GPS.version)
 
 ###################################################
 ##         TODO 12: INPUT FROM KEYBOARD          ##
@@ -1166,20 +1166,20 @@ def detect_2_ip_cameras():
 ##        TODO 20: INTERACT WITH ARDUINO         ##
 ###################################################
 ## Ket noi voi arduino 
-## /dev/ttyACM0
-# try:                       
-#     ## Jetson Nano
-#     arduino_module = serial.Serial(port = '/dev/ttyACM0', baudrate = 115200, timeout = 0.5)                           
-#     arduino_module.flush()
-#     print("Arduino connected successfully!")                                            
-# except:                                                                               
-#     print("Please check the Arduino port again") 
+# /dev/ttyACM0
+try:                       
+    ## Jetson Nano
+    arduino_module = serial.Serial(port = '/dev/ttyACM0', baudrate = 115200, timeout = 0.5)                           
+    arduino_module.flush()
+    print("Arduino connected successfully!")                                            
+except:                                                                               
+    print("Please check the Arduino port again") 
     
 # try:
 ## Windows                                                                                  
-arduino_module = serial.Serial(port = 'COM6', baudrate = 9600, timeout = 0.5)                                                  
-arduino_module.flush()
-print("Arduino connected successfully!")                                            
+# arduino_module = serial.Serial(port = 'COM6', baudrate = 9600, timeout = 0.5)                                                  
+# arduino_module.flush()
+# print("Arduino connected successfully!")                                            
 # except:                                                                               
 #     print("Please check the Arduino port again") 
 
@@ -1273,7 +1273,7 @@ print("[INFO] starting LEFT camera ...")
 left_cam = VideoCapture("rtsp://khkt2024left:khkt2024@ndc!@192.168.0.100:554/stream1")
 print("LEFT camera connect Successfully!")
 print("[INFO] starting RIGHT camera ...")
-right_cam = VideoCapture("rtsp://khkt2024right:khkt2024@ndc!@192.168.0.104:554/stream1")
+right_cam = VideoCapture("rtsp://khkt2024right:khkt2024@ndc!@192.168.0.107:554/stream1")
 time.sleep(1.0)
 print("RIGHT camera connect Successfully!")
 # except:
