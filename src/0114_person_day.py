@@ -128,7 +128,7 @@ flag_sign_in_right = 0
 
 # PERSON: cls_id = 3
 PERSON_COUNTER = 0
-PERSON_CONSEC_THRES = 5
+PERSON_CONSEC_THRES = 2
 flag_person_warning = 0
 flag_person_in_left = 0
 flag_person_in_right = 0
@@ -761,6 +761,8 @@ def cal_distance(cls_id, y1, y2, obj_det_frame_height):
         dist = -350 * obj_h_ratio + 75
     elif cls_id == 1: # Bridge
         dist = -350 * obj_h_ratio + 150
+    elif cls_id == 3:
+        dist = -350 * obj_h_ratio + 75
     return dist
 
 def cal_speed(i, prev_det_data, curr_det_data, x1, y1, x2, y2, cls_id, 
