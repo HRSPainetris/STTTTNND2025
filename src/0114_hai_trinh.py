@@ -762,6 +762,7 @@ def object_detection():
         
 def cal_distance(cls_id, y1, y2, obj_det_frame_height):
     # Calculate the distance of the object
+    dist = 0
     obj_h_ratio = (y2 - y1)/obj_det_frame_height
     if cls_id == 0: # Ship
         dist = -350 * obj_h_ratio + 75
