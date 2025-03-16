@@ -496,7 +496,7 @@ def cal_distance(cls_id, y1, y2, obj_det_frame_height, stacked_frame):
     # Final Distance Estimation
     dist = 0.5 * dist_size + 0.5 * dist_pers
 
-    return dist
+    return dist_size
 
 def cal_speed(i, prev_det_data, curr_det_data, x1, y1, x2, y2, cls_id, 
               dist, prev_speed, pseudo_process_time):   
