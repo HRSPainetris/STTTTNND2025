@@ -472,6 +472,8 @@ def cal_distance(cls_id, y1, y2, obj_det_frame_height, stacked_frame):
         dist_size = -175 * obj_h_ratio + 75
     elif cls_id == 1: # Bridge
         dist_size = -350 * obj_h_ratio + 150
+    elif cls_id == 3: # Person
+        dist_size = -100 * obj_h_ratio + 75
 
     out1 = cv2.warpPerspective(stacked_frame, M1, (maxWidth1, maxHeight1), flags=cv2.INTER_LINEAR)
     out2 = cv2.warpPerspective(stacked_frame, M2, (maxWidth2, maxHeight2), flags=cv2.INTER_LINEAR)
@@ -823,11 +825,12 @@ def object_warning(cls_id, x1, y1, x2, y2, curr_det_data, prev_det_data, i, prev
                 t8 = Thread(phat_loa_show_info_ob_det("6_nguoi_2ben"))
                 t8.deamon = True
                 t8.start()
-        else:
-            PERSON_COUNTER = 0
-            flag_person_warning = 0
-            flag_person_in_left = 0
-            flag_person_in_right = 0
+    else:
+        PERSON_COUNTER = 0
+        flag_person_warning = 0
+        flag_person_in_left = 0
+        flag_person_in_right = 0
+        
     if not mixer.music.get_busy() and cv2.getWindowProperty("System Notice", cv2.WND_PROP_VISIBLE) >= 1:
         cv2.destroyWindow("System Notice")       
                                     
