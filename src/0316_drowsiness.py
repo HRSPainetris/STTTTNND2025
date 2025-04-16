@@ -504,7 +504,7 @@ def drowsiness_detection():
         driver_out_vid.write(driver_frame)
         if not mixer.music.get_busy() and cv2.getWindowProperty("System Notice", cv2.WND_PROP_VISIBLE) >= 1:
             cv2.destroyWindow("System Notice")
-            
+        
         if cv2.waitKey(1) & 0xFF == ord('q'):
             stop_event.set()
             break

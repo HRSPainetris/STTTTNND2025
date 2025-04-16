@@ -67,7 +67,7 @@ def get_screen_size(screen_number = 0):
         raise ValueError("Screen number out of range")
     
 screen_number = 0  # Change this to the index of the screen you want to use
-scale_factor = 2.0  # Set this to the scale factor of your screen (e.g., 2.0 for 200%)
+scale_factor = 2.0 # Set this to the scale factor of your screen (e.g., 2.0 for 200%)
 screen_width, screen_height = get_screen_size(screen_number)
 print(f"Screen width: {screen_width}, Screen height: {screen_height}")
 
@@ -837,7 +837,7 @@ def object_warning(cls_id, x1, y1, x2, y2, curr_det_data, prev_det_data, i, prev
     return ship_speed, stacked_frame
 
 ###############################################################
-##              TODO : * 2 IP CAMERA VIDEOS (L+R)            ##
+# #              TODO : * 2 IP CAMERA VIDEOS (L+R)            ##
 ###############################################################
 # Load LEFT and RIGHT videos
 left_in_vid_name = "ship_night_250114.mp4" #ship
